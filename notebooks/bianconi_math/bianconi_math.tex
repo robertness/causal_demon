@@ -1,0 +1,276 @@
+\documentclass{beamer}
+
+% \usepackage{beamerthemesplit} // Activate for custom appearance
+\def\r#1{{\textcolor{red}#1}}
+\def\c#1{\[\text{#1}\]}
+
+\title{Bianconi Math}
+\author{Robert Ness}
+\date{\today}
+
+\begin{document}
+
+\frame{\titlepage} 
+
+section{Full Model}
+\frame{
+  \frametitle{ODEs}
+  \begin{figure}[!tpb]
+  \centerline{\includegraphics[height=.8\textheight]{figs/bianconi-net.png}}
+  \caption{\small The Bianconi network. \label{bianconi-net}}
+  \end{figure}
+}
+\frame{
+  \frametitle{ODEs}
+  \begin{figure}[!tpb]
+  \centerline{\includegraphics[height=.8\textheight]{figs/net2.png}}
+  \caption{\small The Bianconi network with simplified notation. \label{net2}}
+  \end{figure}
+}
+\frame{
+ \frametitle{Deterministic model}
+  \begin{align*}
+  \frac{dA}{dt} &= v_{\overrightarrow{s_1 a}}A^oS_1 + v_{\overrightarrow{s_2 a}}A^oS_2 - v_{\overrightarrow{ha}}H A  \\
+  \frac{dB}{dt} &= v_{\overrightarrow{ab}}B^oA - v_{\overrightarrow{rg,b}}B\text{rg} \\
+  \frac{dC}{dt} &= v_{\overrightarrow{bc}}C^oB + v_{\overrightarrow{s_1 c}}C^oS_1 + v_{\overrightarrow{s_2 c}}C^oS_2 - \alpha_C C \\
+  \frac{dD}{dt} &= v_{\overrightarrow{cd}} D^o C - \alpha_D D \\
+  \frac{dE}{dt} &= v_{\overrightarrow{be}}E^oB - v_{\overrightarrow{de}}ED  - v_{\overrightarrow{\text{rp},e}}E \text{rp} \\
+  \frac{dF}{dt} &= v_{\overrightarrow{ef}}F^oE - v_{\overrightarrow{\text{pp},f}}F \text{pp}  \\
+  \frac{dG}{dt} &= v_{\overrightarrow{fg}}G^oE -  v_{\overrightarrow{\text{pp},g}}G \text{pp} \\
+  \frac{dH}{dt} &= v_{\overrightarrow{gh}}H^oG - \alpha_H H
+  \end{align*}
+}
+
+\frame{
+  \frametitle{Notation}
+  Define $g$
+  \begin{align*}
+  g(a, b) &= \frac{a}{a + b}
+   \end{align*}
+}
+
+\frame{
+  \frametitle{Solving Pi3k}
+  Pi3k (C) has 3 activators and a first order deactivation. 
+  \begin{scriptsize}
+  \begin{align*}
+    \frac{dC}{dt} &= v_{\overrightarrow{bc}}C^oB + v_{\overrightarrow{s_1 c}}C^oS_1 + v_{\overrightarrow{s_2 c}}C^oS_2 - \alpha_C C \\
+    0 &= v_{\overrightarrow{bc}}C^oB + v_{\overrightarrow{s_1 c}}C^oS_1 + v_{\overrightarrow{s_2 c}}C^oS_2 - \alpha_C C \\
+    0 &= v_{\overrightarrow{bc}}(C_T - C)B + v_{\overrightarrow{s_1 c}}(C_T - C)S_1 + v_{\overrightarrow{s_2 c}}(C_T - C)S_2 - \alpha_C C \\
+    0 &= v_{\overrightarrow{bc}}C_T B - v_{\overrightarrow{bc}}CB + v_{\overrightarrow{s_1 c}}C_TS_1 - v_{\overrightarrow{s_1 c}}CS_1 + v_{\overrightarrow{s_2 c}}C_TS_2 - v_{\overrightarrow{s_2 c}}CS_2 - \alpha_C C \\
+    0 &= v_{\overrightarrow{bc}}C_T B  + v_{\overrightarrow{s_1 c}}C_TS_1 + v_{\overrightarrow{s_2 c}}C_TS_2 - v_{\overrightarrow{bc}}CB - v_{\overrightarrow{s_1 c}}CS_1  - v_{\overrightarrow{s_2 c}}CS_2 - \alpha_C C \\
+     0 &= v_{\overrightarrow{bc}}C_T B  + v_{\overrightarrow{s_1 c}}C_TS_1 + v_{\overrightarrow{s_2 c}}C_TS_2 - C(v_{\overrightarrow{bc}}B + v_{\overrightarrow{s_1 c}}S_1  + v_{\overrightarrow{s_2 c}}S_2 + \alpha_C) \\
+     \frac{C}{C_T} &= \frac{v_{\overrightarrow{bc}}B  + v_{\overrightarrow{s_1 c}}S_1 + v_{\overrightarrow{s_2 c}}S_2}{v_{\overrightarrow{bc}}B + v_{\overrightarrow{s_1 c}}S_1  + v_{\overrightarrow{s_2 c}}S_2 + \alpha_C} \\
+      \frac{C}{C_T} &= \frac{\beta_{\overrightarrow{bc}}B  + \beta_{\overrightarrow{s_1 c}}S_1 + \beta_{\overrightarrow{s_2 c}}S_2}{\beta_{\overrightarrow{bc}}B + \beta_{\overrightarrow{s_1 c}}S_1  + \beta_{\overrightarrow{s_2 c}}S_2 + 1}  \because \beta_{\overrightarrow{bc}} = \frac{v_{\overrightarrow{s c}}}{\alpha_C} \\
+      \frac{C}{C_T} &= g(\beta_{\overrightarrow{bc}}B  + \beta_{\overrightarrow{s_1 c}}S_1 + \beta_{\overrightarrow{s_2 c}}S_2, 1)
+    \end{align*}
+   \end{scriptsize}
+}
+
+\frame{
+  \frametitle{Solving Akt and p90}
+  Akt (D) and p90 (H) is straight forward.
+  \begin{scriptsize}
+  \begin{align*}
+   \frac{dD}{dt} &= v_{\overrightarrow{cd}} D^o C - \alpha_D D \\
+   0 &= v_{\overrightarrow{cd}} D^o C - \alpha_D D \\
+   0 &= v_{\overrightarrow{cd}} (D_T - D) C - \alpha_D D \\
+   0 &= v_{\overrightarrow{cd}} D_T C - v_{\overrightarrow{cd}} D C - \alpha_D D \\
+   0 &= v_{\overrightarrow{cd}} D_T C - D(v_{\overrightarrow{cd}} C + \alpha_D) \\
+   \frac{D}{D_T} &= \frac{v_{\overrightarrow{cd}}  C}{v_{\overrightarrow{cd}} C + \alpha_D} =   \frac{\beta_{\overrightarrow{cd}}  C}{\beta_{\overrightarrow{cd}} C + 1} = g(\beta_{\overrightarrow{cd}} C, 1) \because \beta_{\overrightarrow{cd}} = \frac{v_{\overrightarrow{cd}}}{\alpha_D} \\
+   \frac{H}{H_T} &= \frac{v_{\overrightarrow{gh}}  G}{v_{\overrightarrow{gh}} G + \alpha_H} =   \frac{\beta_{\overrightarrow{gh}}  G}{\beta_{\overrightarrow{gh}} G + 1} = g(\beta_{\overrightarrow{gh}} G, 1) \because \beta_{\overrightarrow{gh}} = \frac{v_{\overrightarrow{gh}}}{\alpha_H} \\
+  \end{align*}
+   \end{scriptsize}
+}
+
+\frame{
+  \frametitle{Solving Ras, Mek, and Erk}
+  Ras (B), Mek (F), and Erk (G) have one activator and one inhibitor, and the inhibitor is constant in the deterministic model.
+  \begin{scriptsize}
+  \begin{align*}
+  \frac{dB}{dt} &= v_{\overrightarrow{ab}}B^oA - v_{\overrightarrow{rg,b}}B\text{rg} \\
+  0 &= v_{\overrightarrow{ab}}B^oA - v_{\overrightarrow{rg,b}}B\text{rg} \\
+  0 &= v_{\overrightarrow{ab}}(B_{tot} - B)A - v_{\overrightarrow{rg,b}}B\text{rg} \\
+  0 &= v_{\overrightarrow{ab}}AB_{tot} - v_{\overrightarrow{ab}}AB - v_{\overrightarrow{rg,b}}B\text{rg} \\
+  0 &= v_{\overrightarrow{ab}}AB_{tot} - B(v_{\overrightarrow{ab}}A + v_{\overrightarrow{rg,b}}\text{rg}) \\
+  \frac{B}{B_T} &= \frac{v_{\overrightarrow{ab}}A}{v_{\overrightarrow{ab}}A + v_{\overrightarrow{rg,b}}\text{rg}} = \frac{\beta_{\overrightarrow{ab}}A}{\beta_{\overrightarrow{ab}}A + \text{rg}} = g(\beta_{\overrightarrow{ab}}A, \text{rg}) \because \beta_{\overrightarrow{ab}} = \frac{v_{\overrightarrow{ab}}}{v_{\overrightarrow{rg,b}}} \\ 
+  \frac{F}{F_T} &= \frac{v_{\overrightarrow{ef}}E}{v_{\overrightarrow{ef}}E + v_{\overrightarrow{pp,f}}\text{pp}} = \frac{\beta_{\overrightarrow{ef}}E}{\beta_{\overrightarrow{ef}}E + \text{pp}} = g(\beta_{\overrightarrow{ef}}E, \text{pp}) \because \beta_{\overrightarrow{ef}} = \frac{v_{\overrightarrow{ef}}}{v_{\overrightarrow{pp,f}}} \\
+  \frac{G}{G_T} &= \frac{v_{\overrightarrow{fg}}F}{v_{\overrightarrow{fg}}F + v_{\overrightarrow{pp,g}}\text{pp}} = \frac{\beta_{\overrightarrow{fg}}F}{\beta_{\overrightarrow{fg}}F + \text{pp}} = g(\beta_{\overrightarrow{fg}}F, \text{pp})\because \beta_{\overrightarrow{pp,g}} = \frac{v_{\overrightarrow{fg}}}{v_{\overrightarrow{pp,g}}}
+  \end{align*}
+   \end{scriptsize}
+}
+
+\frame{
+	\frametitle{Solving Raf}
+	Raf (E) has an inhibition by another protein and by an inhibitor that is constant in the deterministic model
+	\begin{scriptsize}
+	\begin{align*}
+	  \frac{dE}{dt} &= v_{\overrightarrow{be}}E^oB - v_{\overrightarrow{de}}ED  - v_{\overrightarrow{\text{rp},e}}E \text{rp}\\
+	  0 &= v_{\overrightarrow{be}}E^oB - v_{\overrightarrow{de}}ED  - v_{\overrightarrow{\text{rp},e}}E \text{rp}\\
+	  0 &= v_{\overrightarrow{be}}(E_T - E)B - v_{\overrightarrow{de}}ED  - v_{\overrightarrow{\text{rp},e}}E \text{rp}\\
+	  0 &= v_{\overrightarrow{be}}E_T B -  v_{\overrightarrow{be}}EB - v_{\overrightarrow{de}}ED  - v_{\overrightarrow{\text{rp},e}}E \text{rp}\\
+	  0 &= v_{\overrightarrow{be}}E_T B -  E(v_{\overrightarrow{be}}B + v_{\overrightarrow{de}}D  + v_{\overrightarrow{\text{rp},e}} \text{rp})\\ 
+	  \frac{E}{E_T} &= \frac{v_{\overrightarrow{be}} B}{v_{\overrightarrow{be}}B + v_{\overrightarrow{de}}D  + v_{\overrightarrow{\text{rp},e}} \text{rp}} \\
+	  \frac{E}{E_T} &= \frac{\beta_{\overrightarrow{be}} B}{\beta_{\overrightarrow{be}}B + \beta_{\overrightarrow{de}}D  +  \text{rp}} = g(\beta_{\overrightarrow{be}} B, \beta_{\overrightarrow{de}}D  +  \text{rp}) \because \beta_{\overrightarrow{xy}} = \frac{v_{\overrightarrow{xy}}}{v_{\overrightarrow{\text{rp},e}}} 
+	  \end{align*}
+	 \end{scriptsize}
+}
+
+\frame{
+	\frametitle{Solving Sos}
+	Solving now for Sos (A)
+	\begin{scriptsize}
+	\begin{align*}
+		\frac{dA}{dt} &= v_{\overrightarrow{s_1 a}}A^oS_1 + v_{\overrightarrow{s_2 a}}A^oS_2 - v_{\overrightarrow{ha}}H A \\
+		0 &= v_{\overrightarrow{s_1 a}}A^oS_1 + v_{\overrightarrow{s_2 a}}A^oS_2 - v_{\overrightarrow{ha}}H A \\
+		0 &= v_{\overrightarrow{s_1 a}}(A_T - A)S_1 + v_{\overrightarrow{s_2 a}}(A_T - A)S_2 - v_{\overrightarrow{ha}}H A \\
+		0 &= v_{\overrightarrow{s_1 a}}A_TS_1 + v_{\overrightarrow{s_2 a}}S_2A_T - A(v_{\overrightarrow{s_1 a}}S_1 + v_{\overrightarrow{s_2 a}}S_2 + v_{\overrightarrow{ha}}H) \\
+		\frac{A}{A_T} &= \frac{v_{\overrightarrow{s_1 a}}S_1 + v_{\overrightarrow{s_2 a}}S_2}{v_{\overrightarrow{s_1 a}}S_1 + v_{\overrightarrow{s_2 a}}S_2 + v_{\overrightarrow{ha}}H}  \\ 
+		\frac{A}{A_T} &= \frac{\beta_{\overrightarrow{s_1 a}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2}{\beta_{\overrightarrow{s_1 a}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2 + H} = g(\beta_{\overrightarrow{s_1 a}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2, H) \because \beta_{\overrightarrow{x a}} = \frac{v_{\overrightarrow{x a}}}{v_{\overrightarrow{ha}}}   
+	\end{align*}
+	\end{scriptsize}
+}
+
+\frame{
+  \frametitle{Notation}
+  Define $g$
+  \begin{align*}
+  g(a, b) &= \frac{a}{a + b}\\
+  \frac{\mathrm{d} g(a, b)}{\mathrm{d} a}&= \frac{b}{a + b}^2\\ 
+  \frac{\mathrm{d} g(a, b)}{\mathrm{d} a}&= -\frac{a}{a + b}^2
+   \end{align*}
+}
+\frame{
+\frametitle{Solving for A using first order Taylor series}
+Using $\theta_A$ notation
+\begin{align*}
+\frac{A}{A_T} &= f(A) \\
+\frac{A}{A_T} &\approx f(a) + f'(a)(A - a)\\
+\frac{A}{A_T} - f'(a)A  &\approx f(a) - f'(a)a\\ 
+\frac{A}{A_T}(1 - f'(a)A_T)  &\approx f(a) - f'(a)a\\ 
+\frac{A}{A_T}   &\approx \frac{f(a) - f'(a)a}{1 - f'(a)A_T}\\ 
+\end{align*}
+}
+
+\frame{
+\frametitle{Solving for A using first order Taylor series}
+Let $f(a) =g(\beta_{\overrightarrow{s_1 a}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2, a)$
+Use $a = 1$, i.e. Taylor expansion around no inhibition.
+\begin{align*}
+\frac{A}{A_T}   &\approx \frac{g(\beta_{\overrightarrow{s_1 1}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2, 1) - g'(\beta_{\overrightarrow{s_1 1}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2, 1)}{1 - g'(\beta_{\overrightarrow{s_1 1}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2, 1)A_T}\\ 
+\end{align*}
+}
+
+
+\frame{
+	\frametitle{Expnding Sos}
+	H depends on A.
+	\begin{tiny}
+	\begin{align*}
+	\frac{d g(\beta_{\overrightarrow{s_1 a}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2, H)}{dA}&= g'(\beta_{\overrightarrow{s_1 a}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2, H)\frac{dH}{dA}\\	
+	& = g'(\beta_{\overrightarrow{s_1 a}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2, H) g'(\beta_{\overrightarrow{fg}}F, \text{pp})\frac{dF}{dA}\\
+	& = g'(\beta_{\overrightarrow{s_1 a}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2, H) g'(\beta_{\overrightarrow{fg}}F, \text{pp})g'(\beta_{\overrightarrow{ef}}E, \text{pp})\frac{dE}{dA}\\
+	& = g'(\beta_{\overrightarrow{s_1 a}}S_1 + \beta_{\overrightarrow{s_2 a}}S_2, H) g'(\beta_{\overrightarrow{fg}}F, \text{pp})g'(\beta_{\overrightarrow{ef}}E, \text{pp})g'(\beta_{\overrightarrow{be}} B, \beta_{\overrightarrow{de}}D  +  \text{rp})\frac{dB}{dA}\frac{dD}{dA}\\ 
+	\end{align*}
+	\end{tiny}
+This must be the way to get 
+}
+
+
+\frame{
+  \frametitle{Solving A}
+  \begin{align}
+  \frac{A}{A_T} &= \frac{\beta_{\overrightarrow{s_1 a}}S_1}{1 + \beta_{\overrightarrow{s_1 a}}S_1  + \beta_{\overrightarrow{ha}}H} = g_2(\beta_{\overrightarrow{s_1 a}}S_1, \beta_{\overrightarrow{ha}}H) \nonumber\\
+ &=  g_2\bigl(\beta_{\overrightarrow{s_1 a}}S_1, \beta_{\overrightarrow{ha}}H_Tg_1(\beta_{\overrightarrow{gh}}G)\bigr)\label{base1}\\
+ &=  g_2\bigl(\beta_{\overrightarrow{s_1 a}}S_1, \beta_{\overrightarrow{ha}}H_Tg_1(\beta_{\overrightarrow{gh}}G_Tg_1( \beta_{\overrightarrow{fg}}F)\bigr)\label{base2}\\
+ &= g_2\bigl(\beta_{\overrightarrow{s_1 a}}S_1, \beta_{\overrightarrow{ha}}H_Tg_1(\beta_{\overrightarrow{gh}}G_Tg_1( \beta_{\overrightarrow{fg}}F_T g_1(\beta_{\overrightarrow{ef}}E))\bigr) \label{base3}
+ \end{align}
+\vspace{-.3in}
+ \begin{scriptsize}
+ \begin{align}
+ &= g_2\bigl(\beta_{\overrightarrow{s_1 a}}S_1, \beta_{\overrightarrow{ha}}H_Tg_1(\beta_{\overrightarrow{gh}}G_Tg_1( \beta_{\overrightarrow{fg}}F_T g_1(\beta_{\overrightarrow{ef}}E_Tg_2(\beta_{\overrightarrow{be}}B, \beta_{\overrightarrow{de}}D))\bigr) \label{base4}\\
+ &= g_2\bigl(\beta_{\overrightarrow{s_1 a}}S_1, \beta_{\overrightarrow{ha}}H_Tg_1(\beta_{\overrightarrow{gh}}G_Tg_1( \beta_{\overrightarrow{fg}}F_T g_1(\beta_{\overrightarrow{ef}}E_Tg_2(\beta_{\overrightarrow{be}}B_T g_1(\beta_{\overrightarrow{ab}}A), \beta_{\overrightarrow{de}}D_T g_1(\beta_{\overrightarrow{cd}}C)))\bigr)
+ \end{align}
+ \end{scriptsize}
+ \vspace{-.3in}
+ \begin{tiny}
+ \begin{align}
+   &= g_2\bigl(\beta_{\overrightarrow{s_1 a}}S_1, \beta_{\overrightarrow{ha}}H_Tg_1(\beta_{\overrightarrow{gh}}G_T g_1(\beta_{\overrightarrow{fg}}F_T g_1(\beta_{\overrightarrow{ef}}E_Tg_2(\beta_{\overrightarrow{be}}B_T g_1(\beta_{\overrightarrow{ab}}A), \beta_{\overrightarrow{de}}D_T g_1(\beta_{\overrightarrow{cd}}C_T (\beta_{bc}B + \beta_{s_1 c}S_1))))\bigr)
+ \end{align}
+ \end{tiny}
+ \vspace{-.8in}$\frac{\r{A}}{A_T} =$ \vspace{.7in} \begin{tiny} \begin{align}
+ g_2\bigl(\beta_{\overrightarrow{s_1 a}}S_1, \beta_{\overrightarrow{ha}}H_Tg_1(\beta_{\overrightarrow{gh}}G_Tg_1( \beta_{\overrightarrow{fg}}F_T g_1(\beta_{\overrightarrow{ef}}E_Tg_2(\beta_{\overrightarrow{be}}B_T g_1(\beta_{\overrightarrow{ab}}\r{A}), \beta_{\overrightarrow{de}}D_T g_1(\beta_{\overrightarrow{cd}}C_T (\beta_{bc}B_T g_1(\beta_{\overrightarrow{ab}}\r{A} + \beta_{\overrightarrow{s_1 c}}S_1))))\bigr)
+\label{function}\end{align}
+ \end{tiny}
+}
+
+\frame{
+\begin{itemize}
+\item Equation \ref{function} has $A$ on both sides (indicated in red).  The stochastic function in the CPD of A is given by solving Equation \ref{function} for A.  The solution can be approximated by Taylor expansion.  
+\item In terms of parameter estimation, Equation \ref{function} shows that A depends on $\beta_{\overrightarrow{s_1 a}}$, $\beta_{\overrightarrow{ha}}$, $\beta_{\overrightarrow{gh}}$, $\beta_{\overrightarrow{s_1 c}}$, $\beta_{\overrightarrow{fg}}$, $\beta_{\overrightarrow{ef}}$, $\beta_{\overrightarrow{be}}$, $\beta_{\overrightarrow{ab}}$, $\beta_{\overrightarrow{de}}$, $\beta_{\overrightarrow{cd}}$ $\beta_{\overrightarrow{bc}}$, and $\beta_{\overrightarrow{s_1 c}}$ i.e. the parameters that determine every node that is present in the loop.
+\item Thus these parameters are not independent, since their common child A is observed in the data.  The Hamiltonian MCMC will model the relationship between these parameters and A.
+\item Without solving the Taylor expansion, we can estimate only $\beta_{\overrightarrow{ha}}$ in $ g_2(\beta_{\overrightarrow{s_1 a}}S_1, \beta_{\overrightarrow{ha}}H)$. 
+\item  Further, the lack of independence between parameters could be furthered modeled with a hierarchical term.  
+\end{itemize}
+}
+
+
+\frame{
+\frametitle{A Dependencies}
+  \begin{figure}[!tpb]
+  \centerline{\includegraphics[height=.5\textheight]{figs/net2.pdf}}
+  \caption{\small  A depends on $\beta_{\overrightarrow{s_1 a}}$, $\beta_{\overrightarrow{ha}}$, $\beta_{\overrightarrow{gh}}$, $\beta_{\overrightarrow{s_1 c}}$, $\beta_{\overrightarrow{fg}}$, $\beta_{\overrightarrow{ef}}$, $\beta_{\overrightarrow{be}}$, $\beta_{\overrightarrow{ab}}$, $\beta_{\overrightarrow{de}}$, $\beta_{\overrightarrow{cd}}$ $\beta_{\overrightarrow{bc}}$, and $\beta_{\overrightarrow{s_1 c}}$ i.e. the parameters that determine every node that is present in the loop. \label{net}}
+  \end{figure}
+}
+
+
+
+
+\frame{
+\frametitle{Solving for A using second order Taylor series}
+\begin{align*}
+A &= f(A) \\
+A &\approx f(a) + f'(a)(A - a) + f''(a)(x-a)^2\\
+0 &= f(a) + Af'(a) - A - af'(a) + f''(a)(A^2 - 2Aa + a^2)\\ 
+0 &= f(a) + Af'(a) - A - af'(a) + f''(a)A^2 - f''(a)2Aa + f''(a)a^2 \\
+0 &= f''(a)A^2 - A(f''(a)2a - f'(a) + 1) + f(a) - af'(a) + f''(a)a^2 \\
+A &= -(f''(a)2a - f'(a) + 1)\\ &\pm \frac{\sqrt{(f''(a)2a - f'(a) + 1)^2 - 4f''(a) (f(a) - af'(a) + f''(a)a^2) }}{2f''(a)} 
+\end{align*}
+}
+
+
+%\frame{
+%  \frametitle{Notation}
+%  Define $g_1$ and $g_2$
+%  \begin{align*}
+%  g_1(a) &= \frac{a}{1+a}\\
+%  g_2(a, b) &= \frac{a}{1 + a + b}
+% \end{align*}
+%   Derivative  of $g_1$ 
+%   \[g_1'(a) = \frac{1}{(1+a)^2}, \ g_1''(a) = \frac{2}{(1+x)^3}\]
+%   Derivative  of $g_1$ in inhibition term 
+%  \begin{align*}
+%  g_2'(a, b) &=  -\frac{a}{(1 + a + b)^2} \\
+%  g_2''(a, b) &=  -\frac{2a}{(1 + a + b)^3} 
+% \end{align*}
+%}
+%
+%
+%\frame{
+%\frametitle{Taylor Expansion in the inhibition term}
+%\begin{align*}
+% \frac{A}{A_T} &=   g_2(\beta_{\overrightarrow{s_1 a}}S_1, \beta_{\overrightarrow{ha}}H) \\
+% &\approx  g_2(\beta_{\overrightarrow{s_1 a}}S_1, \alpha) + g_2'(\beta_{\overrightarrow{s_1 a}}S_1, \alpha)(\beta_{\overrightarrow{ha}}H - \alpha) \\
+% &+ g_2''(\beta_{\overrightarrow{s_1 a}}S_1, \alpha)\frac{(\beta_{\overrightarrow{ha}}H - \alpha)^2}{2}
+% \end{align*}
+%}
+
+%\frame{
+%  \frametitle{Solving A again}
+%  \begin{align*}
+%  \frac{A}{A_T} &= \frac{\beta_{\overrightarrow{sa}}S}{1 + \beta_{\overrightarrow{sa}}S  + \beta_{\overrightarrow{da}}D}\\
+%  \frac{A}{A_T} &= \frac{\beta_{\overrightarrow{sa}}S}{1 + \beta_{\overrightarrow{sa}}S  + \beta_{\overrightarrow{da}}\frac{D_T\beta_{\overrightarrow{bd}}B}{1+\beta_{\overrightarrow{bd}}B + \beta_{\overrightarrow{cd}}C }}\\
+%    \frac{A}{A_T} &= \frac{\beta_{\overrightarrow{sa}}S}{1 + \beta_{\overrightarrow{sa}}S  + \beta_{\overrightarrow{da}}\frac{D_T\beta_{\overrightarrow{bd}}\frac{B_T \beta_{\overrightarrow{ab}}A}{1 + \beta_{\overrightarrow{ab}}A} }{1+\beta_{\overrightarrow{bd}}\frac{B_T \beta_{\overrightarrow{ab}}A}{1 + \beta_{\overrightarrow{ab}}A}  + \beta_{\overrightarrow{cd}}\frac{C_T \beta_{b,c}\frac{B_T \beta_{\overrightarrow{ab}}A}{1 + \beta_{\overrightarrow{ab}}A} }{1 + \beta_{b,c}\frac{B_T \beta_{\overrightarrow{ab}}A}{1 + \beta_{\overrightarrow{ab}}A} } }}\\
+% \end{align*}
+%}
+\end{document}

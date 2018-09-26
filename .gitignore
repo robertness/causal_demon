@@ -90,3 +90,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# tex
+*.aux
+*.out
+*.pdf
