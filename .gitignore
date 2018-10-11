@@ -95,3 +95,6 @@ venv.bak/
 *.aux
 *.out
 *.pdf
+
+# notebook data
+notebooks/data/
