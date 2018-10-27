@@ -4,6 +4,7 @@ from functools import partial
 
 import pyro
 from pyro import sample
+import torch
 from torch import tensor
 
 """
@@ -17,7 +18,7 @@ spike with 0 variance is a Dirac delta distribution. Pyro has a
 marginals from conditioned programs will sometimes fail when this distribution
 is used.
 """
-Delta = partial(pyro.distributions.Normal, scale=1e-10)
+Delta = partial(pyro.distributions.Normal, scale=1e-6)
 
 constants = {
     "sos_tot": 120000.,
@@ -140,7 +141,7 @@ def f_erk(mek, N_erk):
     return sample('erk', Delta(erk_mu + N_erk))
 
 
-def cancer_signaling(noise_dists):
+def cancer_signaling(noise_dists, sample_shape=torch.Size([1])):
     """Model of Biochemical Signal Transduction in Lung Cancer
 
     This is the model of the EGFR and IGF1R pathway in lung cancer by Bianconi
@@ -152,16 +153,49 @@ def cancer_signaling(noise_dists):
     equation modeling approach. This model assumes the ODEs have been solved
     for steady state, and models the steady state with structural causal
     models.  For more details on this math, see the bianconi_math document.
+
+    The following illustrates how you would simulate an experiment with this
+    model.
+
+    Suppose there were 3 conditions: EGF is varied from low (800),
+    medium (2000), to high (8000) concentrations.  Each condition had 4
+    replicates.
+
+        from pyro.distributions import LogNormal
+
+        noise_vars = [
+            'N_egf', 'N_igf', 'N_sos',
+            'N_ras', 'N_pi3k', 'N_akt',
+            'N_raf', 'N_mek', 'N_erk'
+        ]
+
+        noise_priors = {N: LogNormal(0, .001) for N in noise_vars}
+
+        # replicates on the rows, conditions on the columns
+        #
+        conditions = {
+            'egf': torch.tensor(
+                [[800., 8000., 80000.],
+                 [800., 8000., 80000.],
+                 [800., 8000., 80000.],
+                 [800., 8000., 80000.]]
+            ),
+            'igf': torch.zeros([4, 3])
+        }
+        experiment = pyro.do(cancer_signaling, data=conditions)
+        # Get some Erk values
+        experiment(noise_priors, [4, 3])['erk']
     """
-    N_egf = sample('N_egf', noise_dists['N_egf'])
-    N_igf = sample('N_igf', noise_dists['N_igf'])
-    N_sos = sample('N_sos', noise_dists['N_sos'])
-    N_ras = sample('N_ras', noise_dists['N_ras'])
-    N_pi3k = sample('N_pi3k', noise_dists['N_pi3k'])
-    N_akt = sample('N_akt', noise_dists['N_akt'])
-    N_raf = sample('N_raf', noise_dists['N_raf'])
-    N_mek = sample('N_mek', noise_dists['N_mek'])
-    N_erk = sample('N_erk', noise_dists['N_erk'])
+
+    N_egf = sample('N_egf', noise_dists['N_egf'], sample_shape=sample_shape)
+    N_igf = sample('N_igf', noise_dists['N_igf'], sample_shape=sample_shape)
+    N_sos = sample('N_sos', noise_dists['N_sos'], sample_shape=sample_shape)
+    N_ras = sample('N_ras', noise_dists['N_ras'], sample_shape=sample_shape)
+    N_pi3k = sample('N_pi3k', noise_dists['N_pi3k'], sample_shape=sample_shape)
+    N_akt = sample('N_akt', noise_dists['N_akt'], sample_shape=sample_shape)
+    N_raf = sample('N_raf', noise_dists['N_raf'], sample_shape=sample_shape)
+    N_mek = sample('N_mek', noise_dists['N_mek'], sample_shape=sample_shape)
+    N_erk = sample('N_erk', noise_dists['N_erk'], sample_shape=sample_shape)
 
     egf = f_egf(N_egf)
     igf = f_igf(N_igf)
