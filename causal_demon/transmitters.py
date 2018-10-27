@@ -4,6 +4,7 @@ from functools import partial
 
 import pyro
 from pyro import sample
+import torch
 from torch import tensor
 
 """
@@ -17,7 +18,7 @@ spike with 0 variance is a Dirac delta distribution. Pyro has a
 marginals from conditioned programs will sometimes fail when this distribution
 is used.
 """
-Delta = partial(pyro.distributions.Normal, scale=1e-10)
+Delta = partial(pyro.distributions.Normal, scale=1e-6)
 
 constants = {
     "sos_tot": 120000.,
@@ -152,26 +153,29 @@ def cancer_signaling(noise_dists):
     equation modeling approach. This model assumes the ODEs have been solved
     for steady state, and models the steady state with structural causal
     models.  For more details on this math, see the bianconi_math document.
-    """
-    N_egf = sample('N_egf', noise_dists['N_egf'])
-    N_igf = sample('N_igf', noise_dists['N_igf'])
-    N_sos = sample('N_sos', noise_dists['N_sos'])
-    N_ras = sample('N_ras', noise_dists['N_ras'])
-    N_pi3k = sample('N_pi3k', noise_dists['N_pi3k'])
-    N_akt = sample('N_akt', noise_dists['N_akt'])
-    N_raf = sample('N_raf', noise_dists['N_raf'])
-    N_mek = sample('N_mek', noise_dists['N_mek'])
-    N_erk = sample('N_erk', noise_dists['N_erk'])
 
-    egf = f_egf(N_egf)
-    igf = f_igf(N_igf)
-    sos = f_sos(egf, igf, N_sos)
-    ras = f_ras(sos, N_ras)
-    pi3k = f_pi3k(ras, egf, igf, N_pi3k)
-    akt = f_akt(pi3k, N_akt)
-    raf = f_raf(ras, akt, N_raf)
-    mek = f_mek(raf, N_mek)
-    erk = f_erk(mek, N_erk)
+    """
+
+    with pyro.iarange("model"):
+        N_egf = sample('N_egf', noise_dists['N_egf'])
+        N_igf = sample('N_igf', noise_dists['N_igf'])
+        N_sos = sample('N_sos', noise_dists['N_sos'])
+        N_ras = sample('N_ras', noise_dists['N_ras'])
+        N_pi3k = sample('N_pi3k', noise_dists['N_pi3k'])
+        N_akt = sample('N_akt', noise_dists['N_akt'])
+        N_raf = sample('N_raf', noise_dists['N_raf'])
+        N_mek = sample('N_mek', noise_dists['N_mek'])
+        N_erk = sample('N_erk', noise_dists['N_erk'])
+
+        egf = f_egf(N_egf)
+        igf = f_igf(N_igf)
+        sos = f_sos(egf, igf, N_sos)
+        ras = f_ras(sos, N_ras)
+        pi3k = f_pi3k(ras, egf, igf, N_pi3k)
+        akt = f_akt(pi3k, N_akt)
+        raf = f_raf(ras, akt, N_raf)
+        mek = f_mek(raf, N_mek)
+        erk = f_erk(mek, N_erk)
 
     return {
         'egf': egf,
