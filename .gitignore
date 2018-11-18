@@ -23,7 +23,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-*.xml
 MANIFEST
 
 # PyInstaller
@@ -99,3 +98,7 @@ venv.bak/
 
 # avoid uploading data
 notebooks/data/*
+
+# avoid PyCharm files
+*.iml 
+*.xml
