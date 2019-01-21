@@ -1,0 +1,9 @@
+"0","library(causaldemon, quietly = T, warn.conflicts = F)
+"
+"2","Warning message:
+"
+"2","In file(con, ""rb"") :"
+"2","
+ "
+"2"," cannot open file '/Users/robertness/Dropbox/code/causaldemon/.Rproj.user/shared/notebooks/E4018A79-counterfactual_model_building/1/s/chunks.json': No such file or directory
+"

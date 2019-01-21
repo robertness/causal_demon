@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1547929487253.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "A9D0A20F",
+    "lastKnownWriteTime" : 1548091892,
+    "last_content_update" : 1548091892151,
+    "path" : "~/Dropbox/code/causaldemon/R/bn.R",
+    "project_path" : "R/bn.R",
+    "properties" : {
+        "cursorPosition" : "37,0",
+        "scrollLine" : "35",
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

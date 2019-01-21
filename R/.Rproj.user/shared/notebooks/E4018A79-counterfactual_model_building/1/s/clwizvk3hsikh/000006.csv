@@ -1,0 +1,5 @@
+"0","training <- rbind(set_1, sample_n(set_2, size = nrow(set_1)*3, replace = TRUE))
+"
+"2","Error in sample.int(n, size, replace = replace, prob = weight) : 
+  invalid first argument
+"

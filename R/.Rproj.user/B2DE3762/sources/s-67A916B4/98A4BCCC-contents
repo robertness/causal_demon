@@ -1,0 +1,327 @@
+# Inference on the thing
+
+library(bninfo)
+library(tidyverse)
+library(rstan)
+
+data(isachs)
+.data <- isachs
+names(.data) <- c("praf", 'pmek', 'plcg', 'PIP2', 'PIP3', 'perk', 'pakts473', 'PKA', 'PKC', 'P38', 'pjnk', 'INT')
+proteins <- setdiff(names(.data), c('plcg', 'PIP2', 'PIP3', 'pakts473', 'INT'))
+for(prot in proteins){
+  .data[[prot]] <- ifelse(.data[[prot]] == 1, 0, 1)
+}
+training_raw = .data[(.data$INT == 0) | (.data$INT == 9), ]
+test_raw = .data[.data$INT == 2, ]
+
+
+training_pkc_off = training_raw[training_raw$PKC == 0, ]
+training_pkc_on = training_raw[training_raw$PKC == 1, ]
+training_pkc_off_upsampled = sample_n(training_pkc_off,  nrow(training_pkc_on), replace=TRUE)
+training = rbind(training_pkc_on, training_pkc_off_upsampled)
+
+test_pkc_off = test_raw[test_raw$PKC == 0, ]
+test_pkc_on = test_raw[test_raw$PKC == 1, ]
+test_pkc_on_upsampled = sample_n(test_pkc_on, nrow(test_pkc_off), replace=TRUE)
+test = rbind(test_pkc_off, test_pkc_on_upsampled)
+
+evidence_str <- "
+functions {
+  real h(real N, real p){
+    if(N > p){
+      return 1.0;
+    }else{
+      return 0.0;
+    }
+  }
+  real f_PKC(real N){
+    return h(N, .5804);
+  }
+  real f_PKA(real PKC, real N){
+    real p;
+    p = PKC == 1.0 ? .9521 : .5423;
+    return h(N, p);
+  }
+  real f_pjnk(real PKC, real PKA, real N){
+    real p;
+    if(PKC == 1.0){
+      p = .46;
+    }else{
+      p = PKA == 1.0 ? .2696 : .7155;
+    }
+    return h(N, p);
+  }
+  real f_P38(real PKC, real PKA, real N){
+    real p;
+    if(PKC == 1.0){
+      p = PKA == 1.0 ? .1946 : .3263;
+    }else{
+      p = PKA == 1.0 ? .1245 : .7025;
+    }
+    return h(N, p);
+  }
+  real f_praf(real PKC, real PKA, real N){
+    real p;
+    if(PKA == 1.0){
+      p = .39;
+    }else{
+      p = PKC == 1.0 ? .6180: .9379;
+    }
+    return h(N, p);
+  }
+  real f_pmek(real PKC, real PKA, real praf, real N){
+    real p;
+    if(PKC == 1.0 && praf == 1.0){
+      p = PKA == 1.0 ? .6822 : .7848;
+    }else if(PKC == 1.0 && praf == 0.0){
+      p = .2342;
+    }else if(PKC == 0.0 && praf == 1.0){
+      p = PKA == 1.0 ? .4311 : .8869;
+    } else if(PKC == 0.0 && praf == 0.0){
+      p = PKA == 1.0 ? .1030 : .3750;
+    }
+    return h(N, p);
+  }
+  real f_perk(real PKA, real pmek, real N){
+    real p;
+    if(pmek == 1.0){
+      p = .95;
+    } else {
+      p = PKA == 1.0 ? .8909 : .1565;
+    }
+    return h(N, p);
+  }
+}
+data {
+  int N; // number of observations
+  real<lower=0, upper=1> PKC[N];         // PKC values
+  real<lower=0, upper=1> pmek[N];
+}
+parameters {
+  real<lower=0.0, upper=1.0> N_PKC[N];
+  real<lower=0.0, upper=1.0> N_PKA[N];
+  real<lower=0.0, upper=1.0> N_pjnk[N];
+  real<lower=0.0, upper=1.0> N_P38[N];
+  real<lower=0.0, upper=1.0> N_praf[N];
+  real<lower=0.0, upper=1.0> N_pmek[N];
+  real<lower=0.0, upper=1.0> N_perk[N];
+}
+transformed parameters {
+  real PKC_mu[N];
+  real PKA_mu[N];
+  real pjnk_mu[N];
+  real P38_mu[N];
+  real praf_mu[N];
+  real pmek_mu[N];
+  real perk_mu[N];
+  for(i in 1:N){
+    PKC_mu[i] = f_PKC(N_PKC[i]);
+    PKA_mu[i] = f_PKA(PKC_mu[i], N_PKA[i]);
+    pjnk_mu[i] = f_pjnk(PKC_mu[i], PKA_mu[i], N_pjnk[i]);
+    P38_mu[i] = f_P38(PKC_mu[i], PKA_mu[i], N_P38[i]);
+    praf_mu[i] = f_praf(PKC_mu[i], PKA_mu[i], N_praf[i]);
+    pmek_mu[i] = f_pmek(PKC_mu[i], PKA_mu[i], praf_mu[i], N_pmek[i]);
+    perk_mu[i] = f_perk(PKA_mu[i], pmek_mu[i], N_perk[i]);
+  }
+}
+model {
+  target += uniform_lpdf(N_PKC | 0, 1);
+  target += normal_lpdf(PKC | PKC_mu, 1e-6);
+  target += normal_lpdf(pmek | pmek_mu, 1e-6);
+}
+"
+
+evidence_model <- stan_model(model_code = evidence_str)
+
+library(purrr)
+
+noise_terms <- c('N_PKC', 'N_PKA', 'N_pjnk', 'N_P38', 'N_praf', 'N_pmek', 'N_perk')
+item <- training[1, , drop=F]
+sim_counterfactual_erk <- function(item){
+  noise_posterior <- sampling(
+    evidence_model,
+    data = list(N=nrow(item), PKC=as.array(item$PKC), pmek = as.array(item$pmek)),
+    cores = parallel::detectCores(),
+    iter = 2000,
+    pars = noise_terms
+  )
+  samples <- rstan::extract(noise_posterior, permuted = T)
+  log_prob <- samples[['lp__']]
+  samples <- map(samples[noise_terms], as.numeric)
+  args <- samples[setdiff(noise_terms, c('N_PKC', 'N_pmek'))]
+  args$PKC <- rep(item$PKC, length(args[[1]]))
+  args$pmek <- rep(0, length(args[[1]]))
+  erk_estimate <- pmap_dbl(args, counterfactual_model)
+  return(mean(erk_estimate))
+}
+
+erk_estimates <- NULL
+pkc_1 <- which(training$PKC == 1)
+pkc_0 <- which(training$PKC == 0)
+m <- 100
+for(i in pkc_1[1:m]){
+  print(paste('pkc = 1: ', i))
+  erk_estimate <- sim_counterfactual_erk(training[i, , drop=F])
+  erk_estimates <- c(erk_estimates, erk_estimate)
+}
+for(i in pkc_0[1:m]){
+  print(paste('pkc = 0: ', i))
+  erk_estimate <- sim_counterfactual_erk(training[i, , drop=F])
+  erk_estimates <- c(erk_estimates, erk_estimate)
+}
+
+h <- function(N, p) ifelse(N > p, 1, 0)
+
+f_PKC <- function(N){
+  h(N, .5804)
+}
+f_PKA  <- function(PKC, N){
+  p = ifelse(PKC == 1.0, .9521, .5423)
+  h(N, p)
+}
+f_pjnk <- function(PKC, PKA, N){
+  if(PKC == 1.0){
+    p = .46
+  }else{
+    p = ifelse(PKA == 1.0, .2696, .7155)
+  }
+  h(N, p)
+}
+f_P38 <- function(PKC, PKA, N){
+  if(PKC == 1.0){
+    p = ifelse(PKA == 1.0, .1946, .3263)
+  }else{
+    p = ifelse(PKA == 1.0, .1245, .7025)
+  }
+  h(N, p)
+}
+f_praf <- function(PKC, PKA, N){
+  if(PKA == 1.0){
+    p = .39
+  }else{
+    p = ifelse(PKC == 1.0, .6180, .9379)
+  }
+  h(N, p)
+}
+
+f_pmek <- function(PKC, PKA, praf, N){
+  if(PKC == 1.0 && praf == 1.0){
+    p = ifelse(PKA == 1.0, .6822, .7848)
+  }else if(PKC == 1.0 && praf == 0.0){
+    p = .2342
+  }else if(PKC == 0.0 && praf == 1.0){
+    p = ifelse(PKA == 1.0, .4311, .8869)
+  } else if(PKC == 0.0 && praf == 0.0){
+    p = ifelse(PKA == 1.0, .1030, .3750)
+  }
+  h(N, p)
+}
+
+f_perk <- function(PKA, pmek, N){
+  if(pmek == 1.0){
+    p = .95;
+  } else {
+    p = ifelse(PKA == 1.0, .8909, .1565)
+  }
+  h(N, p);
+}
+
+f_Akt(real PKA, real N){
+  real p;
+  if(Erk == 1.0){
+    p = PKA == 1.0 ? .3277 ? .8073
+  } else {
+    p = 0.3107
+  }
+  return h(N, p);
+}
+
+counterfactual_model <- function(PKC, N_PKA, N_pjnk, N_P38, N_praf, pmek, N_perk){
+  PKA <- f_PKA(PKC, N_PKA)
+  pjnk <- f_pjnk(PKC, PKA, N_PKA)
+  P38 <- f_P38(PKC, PKA, N_P38)
+  praf <- f_praf(PKC, PKA, N_praf)
+  perk <- f_perk(PKA, pmek, N_perk)
+  return(perk)
+}
+
+
+
+
+hist(samples$N_PKC, main = 'PKC = 1')
+abline(v = .5804)
+
+
+pkc_str <- "
+functions {
+  real h(real N, real p){
+    if(N > p){
+      return 1.0;
+    }else{
+      return 0.0;
+    }
+  }
+  real f_PKC(real N){
+    return h(N, .5804);
+  }
+}
+data {
+  int N; // number of observations
+  real<lower=0, upper=1> PKC[N];         // PKC values
+}
+parameters {
+  real<lower=0.0, upper=1.0> N_PKC[N];
+}
+transformed parameters {
+  real PKC_mu[N];
+  for(i in 1:N){
+    PKC_mu[i] = f_PKC(N_PKC[i]);
+  }
+}
+model {
+  target += uniform_lpdf(N_PKC | 0, 1);
+  target += normal_lpdf(PKC | PKC_mu, 1e-6);
+}
+"
+cols = c(rgb(0,0,204, alpha=100, maxColorValue = 255), rgb(0,0,255, alpha=100, maxColorValue = 255), rgb(51,51,255, alpha=100, maxColorValue = 255))
+m <- 100
+pkc_is_one <- which(training$PKC == 1)[1:m]
+working_data <- training[pkc_is_one, ,drop=FALSE]
+pkc_model <- stan_model(model_code = pkc_str)
+pdf(file='/Users/robertness/Downloads/stan_experiment.pdf')
+for(iter in seq(2000, 30000, by = 2000)){
+  for(x in cols){
+    s_test <- vb(pkc_model, list(N=nrow(working_data), PKC=as.array(working_data$PKC)), iter=iter)
+    noise_when_PKC_is_1 <- paste0('N_PKC[', which(working_data$PKC == 1), ']')
+    samples_test <- rstan::extract(s_test, permuted = T, pars = noise_when_PKC_is_1)
+    pool1 <- unlist(samples_test)
+    if(x == cols[1]){
+      hist(pool1,
+           main = 'Hist of pooled PKC noise samples when PKC is 1',
+           xlim = c(0, 1),
+           xlab= paste('N_PKC samples pooled across samples', 'm = ', m, '\n','iter = ', iter),
+           col=x,
+           prob=T,
+           ylim = c(0, 10)
+           )
+      abline(v = .5804, col = 'red')
+    }else{
+      hist(samples_test[[1]], col = x, prob=T, add=TRUE)
+    }
+  }
+}
+dev.off()
+
+m <-1
+working_data <- training[1:m, , drop=FALSE]
+pkc_model <- stan_model(model_code = pkc_str)
+s_test <- vb(pkc_model, list(N=nrow(working_data), PKC=as.array(working_data$PKC)), iter =100000)
+noise_when_PKC_is_1 <- paste0('N_PKC[', which(working_data$PKC == 1), ']')
+samples_test <- rstan::extract(s_test, permuted = T, pars = noise_when_PKC_is_1)
+pool <- unlist(samples_test)
+hist(samples_test[[1]],
+     main = 'Hist of pooled PKC noise samples when PKC is 1',
+     xlim = c(0, 1),
+     xlab= 'N_PKC samples pooled across samples'
+)
+abline(v = .5804, col = 'red')

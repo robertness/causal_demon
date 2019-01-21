@@ -1,0 +1,122 @@
+"0","```r
+library(bninfo)
+
+```"
+"1","Loading required package: lucy
+Loading required package: igraph
+
+Attaching package: ‘igraph’
+
+The following objects are masked from ‘package:dplyr’:
+
+    as_data_frame, groups, union
+
+The following objects are masked from ‘package:purrr’:
+
+    compose, simplify
+
+The following object is masked from ‘package:tidyr’:
+
+    crossing
+
+The following object is masked from ‘package:tibble’:
+
+    as_data_frame
+
+The following objects are masked from ‘package:stats’:
+
+    decompose, spectrum
+
+The following object is masked from ‘package:base’:
+
+    union
+
+Loading required package: Rgraphviz
+Loading required package: graph
+Loading required package: BiocGenerics
+Loading required package: parallel
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:parallel’:
+
+    clusterApply, clusterApplyLB, clusterCall, clusterEvalQ, clusterExport, clusterMap, parApply, parCapply, parLapply, parLapplyLB, parRapply, parSapply, parSapplyLB
+
+The following objects are masked from ‘package:igraph’:
+
+    normalize, path, union
+
+The following objects are masked from ‘package:dplyr’:
+
+    combine, intersect, setdiff, union
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colMeans, colnames, colSums, dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep, grepl,
+    intersect, is.unsorted, lapply, lengths, Map, mapply, match, mget, order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank, rbind, Reduce, rowMeans, rownames,
+    rowSums, sapply, setdiff, sort, table, tapply, union, unique, unsplit, which, which.max, which.min
+
+
+Attaching package: ‘graph’
+
+The following objects are masked from ‘package:igraph’:
+
+    degree, edges, intersection
+
+The following object is masked from ‘package:stringr’:
+
+    boundary
+
+Loading required package: grid
+Loading required package: magrittr
+
+Attaching package: ‘magrittr’
+
+The following object is masked from ‘package:purrr’:
+
+    set_names
+
+The following object is masked from ‘package:tidyr’:
+
+    extract
+
+The following object is masked from ‘package:rstan’:
+
+    extract
+
+Loading required package: bnlearn
+
+Attaching package: ‘bnlearn’
+
+The following objects are masked from ‘package:BiocGenerics’:
+
+    path, score
+
+The following objects are masked from ‘package:igraph’:
+
+    compare, path, subgraph
+
+The following object is masked from ‘package:stats’:
+
+    sigma
+
+Loading required package: gRain
+Loading required package: gRbase
+
+Attaching package: ‘gRbase’
+
+The following objects are masked from ‘package:bnlearn’:
+
+    ancestors, children, parents
+
+
+Attaching package: ‘bninfo’
+
+The following object is masked from ‘package:lucy’:
+
+    name_edges
+"

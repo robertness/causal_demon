@@ -1,0 +1,10 @@
+"0","param_fit <- int_net %>%
+  bn.fit(training, method = ""bayes"") %>%
+  rbn(100000) %>%
+  select(-int_PKA, -int_Akt, -int_PKC, -int_PIP2, -int_Mek) %>%
+  as.data.frame %>%
+  {bn.fit(net, ., method = ""bayes"")}
+"
+"2","Error in check.data(data, allow.missing = TRUE) : 
+  variable Raf must have at least two levels.
+"

@@ -1,0 +1,23 @@
+from distance import euclidean
+from distance import manhattan
+
+STARBUCKS_COORD = (33, 45)
+DUNKS_COORD = (54, 12)
+
+def print_something(dx1, dy1, dx2, dy2, ..., sy2):
+  if choice = 'm':
+    dist_func = manhattan
+  else
+    dist_func = euclidean
+  
+  distance_dunks = dist_func(dx1, DUNKS_COORD[0], dy1, DUNKS_COORD[1])
+  distance_starb = dist_fuct(sx1, sx2, sy1, sy2)
+  if distance_dunks - distance_starb > 0:
+    print('go to starbucks')
+  else
+    print('go to dunks')
+  
+  
+input(dx1, ,...)
+
+dproi

@@ -1,0 +1,6 @@
+"0","```r
+training_selection <- sample(c(T, F), prob = c(.9, .1), size = nrow(.fit_data), replace=T)
+
+```"
+"1","Error in nrow(.fit_data) : object '.fit_data' not found
+"

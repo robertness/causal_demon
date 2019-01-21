@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1547907357158.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3441263574",
+    "id" : "F4CC443A",
+    "lastKnownWriteTime" : 1548099302,
+    "last_content_update" : 1548099302213,
+    "path" : "~/Dropbox/code/causaldemon/vignettes/sachs_scm_prediction.Rmd",
+    "project_path" : "vignettes/sachs_scm_prediction.Rmd",
+    "properties" : {
+        "cursorPosition" : "262,0",
+        "last_setup_crc32" : "67A916B49990457b",
+        "scrollLine" : "261"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

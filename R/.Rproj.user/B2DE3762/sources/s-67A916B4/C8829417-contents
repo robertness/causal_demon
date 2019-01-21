@@ -1,0 +1,103 @@
+functions {
+  real h(real N, real p){
+    if(N > p){
+      return 1.0;
+    }else{
+      return 0.0;
+    }
+  }
+  real f_PKC(real N){
+    return h(N, .5804);
+  }
+  real f_PKA(real PKC, real N){
+    real p;
+    p = PKC == 1.0 ? .9521 : .5423;
+    return h(N, p);
+  }
+  real f_Jnk(real PKC, real PKA, real N){
+    real p;
+    if(PKC == 1.0){
+      p = .46;
+    }else{
+      p = PKA == 1.0 ? .2696 : .7155;
+    }
+    return h(N, p);
+  }
+  real f_P38(real PKC, real PKA, real N){
+    real p;
+    if(PKC == 1.0){
+      p = PKA == 1.0 ? .1946 : .3263;
+    }else{
+      p = PKA == 1.0 ? .1245 : .7025;
+    }
+    return h(N, p);
+  }
+  real f_Raf(real PKC, real PKA, real N){
+    real p;
+    if(PKA == 1.0){
+      p = .39;
+    }else{
+      p = PKC == 1.0 ? .6180: .9379;
+    }
+    return h(N, p);
+  }
+  real f_Mek(real PKC, real PKA, real Raf, real N){
+    real p;
+    if(PKC == 1.0 && Raf == 1.0){
+      p = PKA == 1.0 ? .6822 : .7848;
+    }else if(PKC == 1.0 && Raf == 0.0){
+      p = .2342;
+    }else if(PKC == 0.0 && Raf == 1.0){
+      p = PKA == 1.0 ? .4311 : .8869;
+    } else if(PKC == 0.0 && Raf == 0.0){
+      p = PKA == 1.0 ? .1030 : .3750;
+    }
+    return h(N, p);
+  }
+  real f_Erk(real PKA, real Mek, real N){
+    real p;
+    if(Mek == 1.0){
+      p = .95;
+    } else {
+      p = PKA == 1.0 ? .8909 : .1565;
+    }
+    return h(N, p);
+  }
+}
+data {
+  int N; // number of observations
+  real<lower=0, upper=1> PKC[N];         // PKC values
+  real<lower=0, upper=1> Mek[N];
+}
+parameters {
+  real<lower=0.0, upper=1.0> N_PKC[N];
+  real<lower=0.0, upper=1.0> N_PKA[N];
+  real<lower=0.0, upper=1.0> N_Jnk[N];
+  real<lower=0.0, upper=1.0> N_P38[N];
+  real<lower=0.0, upper=1.0> N_Raf[N];
+  real<lower=0.0, upper=1.0> N_Mek[N];
+  real<lower=0.0, upper=1.0> N_Erk[N];
+}
+transformed parameters {
+  real PKC_mu[N];
+  real PKA_mu[N];
+  real Jnk_mu[N];
+  real P38_mu[N];
+  real Raf_mu[N];
+  real Mek_mu[N];
+  real Erk_mu[N];
+  for(i in 1:N){
+    PKC_mu[i] = f_PKC(N_PKC[i]);
+    PKA_mu[i] = f_PKA(PKC_mu[i], N_PKA[i]);
+    Jnk_mu[i] = f_Jnk(PKC_mu[i], PKA_mu[i], N_Jnk[i]);
+    P38_mu[i] = f_P38(PKC_mu[i], PKA_mu[i], N_P38[i]);
+    Raf_mu[i] = f_Raf(PKC_mu[i], PKA_mu[i], N_Raf[i]);
+    Mek_mu[i] = f_Mek(PKC_mu[i], PKA_mu[i], Raf_mu[i], N_Mek[i]);
+    Erk_mu[i] = f_Erk(PKA_mu[i], Mek_mu[i], N_Erk[i]);
+  }
+}
+model {
+  target += uniform_lpdf(N_PKC | 0, 1);
+  target += normal_lpdf(PKC | PKC_mu, 1e-6);
+  target += normal_lpdf(Mek | Mek_mu, 1e-6);
+}

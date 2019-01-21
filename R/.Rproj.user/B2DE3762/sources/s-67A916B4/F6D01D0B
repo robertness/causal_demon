@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1547951782226.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "F6D01D0B",
+    "lastKnownWriteTime" : 1548093398,
+    "last_content_update" : 1548093398629,
+    "path" : "~/Dropbox/code/causaldemon/inst/extdata/sachs_scm.stan",
+    "project_path" : "inst/extdata/sachs_scm.stan",
+    "properties" : {
+        "cursorPosition" : "11,12",
+        "scrollLine" : "3",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "stan"
+}

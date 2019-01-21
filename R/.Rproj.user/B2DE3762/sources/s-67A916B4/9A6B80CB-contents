@@ -1,0 +1,3 @@
+library(bninfo)
+data(isachs)
+isachs$

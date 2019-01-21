@@ -1,0 +1,357 @@
+---
+title: "Counterfactual Model Building"
+output: html_notebook
+---
+
+
+```{r, message=FALSE}
+# The `bninfo` package is located at www.github.com/robertness/bninfo
+# This is a companion package to bnlearn that contains many helper tools and datasets.
+library(bninfo, quietly = T, warn.conflicts = F)
+library(tidyverse, quietly = T, warn.conflicts = F)
+```
+
+My goal is to create a Bayes net and an equivalent structural causal model in Pyro and compare their performance on intervention/counterfactual prediction using the Sachs network
+
+My goal with this vignette was to quickly fit some parameters on the network, as I want to focus on the prediction task, not parameter inference.
+
+I want to fit these parameters on the Sachs network using all the intervention data. I did this first by converting the processed discrete data into 2 levels ("on" and "off") instead of 3, since that is more interpretable and has less parameters to deal with.  I also tried working with the continuous unprocessed data, applying an inverse hyperbolic transform, and fitting each node with a linear model that includes its parents, and a bunch of interaction effects that should account both for interventions and batch effects.  My conclusion is that this is less preferable than working with the discrete processed data because (1) explaining the transform to a non-bio audience would be challenging, (2) it seems to call for latent variables on top of noise variables in a way that makes me want to use Stan, (3) it discrete model seems to capture strange interactions between parents like AND-gates that the linear model can't, and (4) the discrete model lets me use if-then control flow, which I think is nice in the probabilistic programming setting.  The estimates from the discrete model were used to build a Python notebook that I plan to submit to the Pyro repo. 
+
+Visualizing the network.
+
+```{r}
+val_str <- paste0(
+  "[int_Mek]",
+  "[int_PKA]",
+  "[int_Akt]",
+  "[int_PKC]",
+  "[int_PIP2]",
+  "[Plcg]",
+  "[PIP3|Plcg]",
+  "[PKC|int_PKC]",
+  "[PKA|PKC:int_PKA]",
+  "[Raf|PKC:PKA]",
+  "[Mek|PKC:PKA:Raf:int_Mek]",
+  "[Erk|Mek:PKA]",
+  "[Akt|Erk:PKA:int_Akt]",
+  "[P38|PKC:PKA]",
+  "[Jnk|PKC:PKA]",
+  "[PIP2|Plcg:PIP3:int_PIP2]"
+)
+
+int_net <- model2network(val_str)
+graphviz.plot(int_net)
+```
+
+Let's first fit a binary network, and get an idea of what the prediction task will be.
+
+```{r}
+data(tcells)
+.data <- tcells$processed$.data
+interventions <- tcells$processed$interventions
+```
+
+
+```{r}
+.data <- map_df(.data, ~ ifelse(.x == 1, 0, 1))
+
+training_selection <- sample(c(T, F), prob = c(.9, .1), size = nrow(.data), replace=T)
+training <- .data[training_selection, ]
+test <- .data[!training_selection, ]
+INT <- interventions[training_selection]
+INT_test <- interventions[!training_selection]
+
+training <- training %>%
+  mutate(
+    int_PKA = as.factor(as.integer(INT == 'PKA')),
+    int_Akt = as.factor(as.integer(INT == 'Akt')),
+    int_PKC = as.factor(as.integer(INT == 'PKC')),
+    int_PIP2 = as.factor(as.integer(INT == 'PIP2')),
+    int_Mek = as.factor(as.integer(INT == 'Mek'))
+  ) %>%
+  as.data.frame
+```
+
+Further, the counterfactual prediction task will becompared against the Mek intervention data.  So let's bias the parameter inference strongly in favor of that subset.  This is kind of a hack to deal with bias in parameter inference, as the goal of this analysis is not parameter inference.
+
+```{r}
+set_1 <- filter(training, PKA != 0, PKC != 0, int_Mek == 0)
+set_2 <- filter(training, PKA == 0, PKC == 0, int_Mek == 1)
+training <- rbind(set_1, sample_n(set_2, size = nrow(set_1)*3, replace = TRUE))
+training <- map_df(training, as.factor)
+```
+
+
+Create a network without interventions, and fit it using simulated data from the intervention network.
+
+```{r}
+val_str <- paste0(
+  "[Plcg]",
+  "[PIP3|Plcg]",
+  "[PKC]",
+  "[PKA|PKC]",
+  "[Raf|PKC:PKA]",
+  "[Mek|PKC:PKA:Raf]",
+  "[Erk|Mek:PKA]",
+  "[Akt|Erk:PKA]",
+  "[P38|PKC:PKA]",
+  "[Jnk|PKC:PKA]",
+  "[PIP2|Plcg:PIP3]"
+)
+
+net <- model2network(val_str)
+
+param_fit <- int_net %>%
+  bn.fit(training, method = "bayes") %>%
+  rbn(100000) %>%
+  select(-int_PKA, -int_Akt, -int_PKC, -int_PIP2, -int_Mek) %>%
+  as.data.frame %>%
+  {bn.fit(net, ., method = "bayes")}
+```
+
+
+Some observations on the distributions.
+
+```{r}
+fit1$Akt
+```
+
+When PKA is off, if Erk is off, Akt is likely off, and when Erk is on, Akt is likely on.  When PKA is on, Erk seems to have little effect on Akt.  In Python could code it up as follows:
+
+```
+if PKA:
+    Akt = Flip(.32)
+else:
+    if Erk:
+        Akt = Flip(.8077)
+    else:
+        Akt = Flip(.2793)
+```
+
+The other proteins are similar.  Mek is a bit more complicated.  
+
+* Mek is typically off when PKC and Raf and PKA are off.
+* When PKC and Raf are off, turning PKA on makes Mek even more likely to be off
+* When PKC is on, PKA has no impact on Mek
+* Raf is definately having a positive impact on Mek, and the degree of impact seems modulated by PKA
+
+```{r}
+fit1$Mek
+```
+
+PIP3's impact on PIP2 seems negligible, as is Plcg's affect on PIP3
+
+```{r}
+print(fit1$Plcg)
+print(fit1$PIP2)
+print(fit1$PIP3)
+```
+
+I am going to try recoding, so that levels 1 and 2 become 'off' and 3 becomes 'on'. 
+
+```{r}
+.data <- training %>%
+  mutate(
+    Raf = as.factor(ifelse(Raf == 1, 'off', 'on')),
+    Mek = as.factor(ifelse(Mek == 1, 'off', 'on')),
+    Plcg = as.factor(ifelse(Plcg == 3, 'on', 'off')),
+    PIP2 = as.factor(ifelse(PIP2 == 3, 'on', 'off')),
+    PIP3 = as.factor(ifelse(PIP3 == 3, 'on', 'off')),
+    Erk = as.factor(ifelse(Erk == 1, 'off', 'on')),
+    Akt = as.factor(ifelse(Akt == 1, 'off', 'on')),
+    PKA = as.factor(ifelse(PKA == 1, 'off', 'on')),
+    PKC = as.factor(ifelse(PKC == 1, 'off', 'on')),
+    P38 = as.factor(ifelse(P38 == 1, 'off', 'on')),
+    Jnk = as.factor(ifelse(Jnk == 1, 'off', 'on'))
+  ) %>%
+  mutate(
+    int_PKA = as.factor(as.integer(INT == 'PKA')),
+    int_Akt = as.factor(as.integer(INT == 'Akt')),
+    int_PKC = as.factor(as.integer(INT == 'PKC')),
+    int_PIP2 = as.factor(as.integer(INT == 'PIP2')),
+    int_Mek = as.factor(as.integer(INT == 'Mek'))
+  ) %>%
+  as.data.frame
+
+val_str <- paste0(
+  "[Plcg]",
+  "[PIP3|Plcg]",
+  "[PKC]",
+  "[PKA|PKC]",
+  "[Raf|PKC:PKA]",
+  "[Mek|PKC:PKA:Raf]",
+  "[Erk|Mek:PKA]",
+  "[Akt|Erk:PKA]",
+  "[P38|PKC:PKA]",
+  "[Jnk|PKC:PKA]",
+  "[PIP2|Plcg:PIP3]"
+)
+
+net <- model2network(val_str)
+
+fit2 <- int_net %>%
+  bn.fit(training, method = "bayes") %>%
+  rbn(100000) %>%
+  select(-int_PKA, -int_Akt, -int_PKC, -int_PIP2, -int_Mek) %>%
+  as.data.frame %>%
+  {bn.fit(net, ., method = "bayes")}
+```
+
+Not much difference between Plcg:
+
+```{r}
+print(fit1$Plcg)
+print(fit2$Plcg)
+```
+
+
+```{r}
+print(fit1$PIP2)
+print(fit2$PIP2)
+```
+
+Not much difference, except on the direction of the relationship between PIP3 and PIP2.
+
+# Predicting Interventions
+
+This is an attempt to do evaluation by calculating log-likelihood of test data.  I wrote one using `cpquery`, and one that directly calculates the logmass using the CPDs.  
+
+```{r}
+results <- list()
+INT_test <- interventions[!training_selection]
+
+for(i in 1:nrow(test)){
+  if(INT_test[i] != "observational"){
+    int_target <- INT_test[i]
+    evidence <- structure(list(test[[prot]][i]), names=prot)
+    int_fit <- mutilated(fit1, evidence)
+    ordered_nodes <- node.ordering(fit1)
+    factors <- NULL
+    for(prot in ordered_nodes){
+      parents <- bnlearn::parents(int_fit, prot)
+      prot_cpd <- as_tibble(int_fit[[prot]]$prob)
+      if(nrow(prot_cpd) == 2){
+        names(prot_cpd)[1] <- prot
+      }
+      obs <- test[i, c(prot, parents)]
+      str <- paste0(names(obs), " == '", 
+                    map(obs, as.character), "'",
+                    sep = "", collapse = " , ")
+      cmd <- paste0('filter(prot_cpd, ', str, ")$n")
+      factor <- eval(parse(text = cmd))
+      factors <- c(factors, factor)
+    }
+    names(factors) <- ordered_nodes
+    results[[int_target]] <- c(results[[int_target]], factors)
+  }
+}
+
+
+for(i in 1:nrow(test)){
+  if(INT_test[i] != "observational"){
+    prot <- INT_test[i]
+    evidence <- structure(list(test[[prot]][i]), names=prot)
+    int_fit <- mutilated(fit1, evidence)
+    not_prot <- setdiff(names(test), prot)
+    obs <- paste("(", not_prot, " == '", 
+            sapply(test[1, not_prot], as.character), "')",
+            sep = "", collapse = " & ")
+    ev <- paste0("(", names(evidence), " == '", evidence[[prot]], "')")
+    cmd <- paste0("log(cpquery(int_fit, ", obs, ", ", ev, "))", sep = "")
+    results[[prot]] <- c(results[[prot]], eval(parse(text = cmd)))
+  }
+}
+
+```
+
+
+Thinking further, I think it is preferable to focus on a specific prediction task.  I think Erk is a good candidate because it is downstream of many of the interventions.
+
+Let's see if there is an intervention dataset for Erk where we have a great difference from the others.
+
+```{r}
+plot_comparison <- function(int){
+  int_erk <- filter(test, INT_test == int)$Erk
+  not_int_erk <- filter(test, INT_test != int)$Erk
+  title <- paste0('Erk in ', int, ' and non-', int, ' sets.')
+  barplot(prop.table(table(not_int_erk)), ylim=c(0,1), col=alpha("darkgrey", .5), main=title)
+  barplot(prop.table(table(int_erk)), ylim=c(0,1), add=T, col=alpha("darkred", .5))
+}
+plot_comparison('PKA')
+plot_comparison('Akt')
+plot_comparison('PKC')
+plot_comparison('PIP2')
+plot_comparison('Mek')
+```
+
+So I am going to go with this intervention on Mek as the evaluation set.
+
+
+# Parameter estimation for a linear SCM
+
+We will fit a linear model to the protein values transformed by the inverse hyperbolic transform, which is like the log transform but allowing for 0's.
+
+```{r}
+.data <- tcells$raw_data
+
+asinh <- function(x) {
+  log(x + sqrt(x*x + 1))
+}
+
+prot_names <- c("Raf", "Mek", "Plcg", "PIP2", "PIP3", "Erk", "Akt", "PKA", "PKC", "P38", "Jnk")
+
+for (prot in prot_names){
+  .data[prot] <- asinh(.data[prot])
+}
+```
+
+Create a variable for the batch of the data.  Each protein variable will have this as a predictor in order to estimate batch effects.
+
+```{r}
+for(i in 1:length(.raw_data)){
+  .data[[i]]$batch <- names(.data)[i]
+}
+```
+
+Next, we create the model for each protein.  We want a linear model that is additive in the parents, so we exclude multiplicative effects between parents.  However, to account for pertubations and batch effects, we include a multiplicative effect between batch and each parent.
+
+```{r}
+formulas <- list(
+  PKC = PKC ~ batch,
+  PKA = PKA ~ PKC*batch,
+  Jnk = Jnk ~ PKC*batch + PKA*batch,
+  Raf = Raf ~ PKC*batch + PKA*batch,
+  Mek = Mek ~ PKC*batch + PKA*batch + Raf*batch,
+  Erk = Erk ~ Mek*batch + PKA*batch,
+  Akt = Akt ~ Erk*batch + PKA*batch,
+  P38 = P38 ~ PKA*batch + PKC*batch,
+  Plcg = Plcg ~ batch,
+  PIP3 = PIP3 ~ Plcg*batch,
+  PIP2 = PIP2 ~ PIP3*batch + Plcg*batch 
+)
+
+```
+
+Seperate the data into training and test sets.
+
+```{r}
+training_selection <- sample(c(T, F), prob = c(.9, .1), size = nrow(.fit_data), replace=T)
+training <- .fit_data[training_selection, ]
+test <- .fit_data[!training_selection, ]
+```
+
+Fit a model for each protein.
+
+```{r}
+fit_protein <- function(prot){
+  fit <- lm(formulas[[prot]], training)
+  res <- predict.glm(fit, newdata = test, type = "response") - test[[prot]]
+  mse <- mean(res**2)
+  return(list(fit=tidy(fit), sqrd_errs = summary(res)))
+}
+
+model <- map(prot_names, fit_protein)
+names(model) <- prot_names
+```
+
+There might be something that can be done here to improve residuals.  IRLS?

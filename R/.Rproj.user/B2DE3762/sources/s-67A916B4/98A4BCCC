@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1547907521383.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "98A4BCCC",
+    "lastKnownWriteTime" : 1547953688,
+    "last_content_update" : 1547953688739,
+    "path" : "~/Dropbox/code/bninfo/vignettes/stan_model_for_counterfactual_prediction.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "12,1",
+        "scrollLine" : "1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
