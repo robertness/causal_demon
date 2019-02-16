@@ -68,7 +68,52 @@ def f_mapk(map2k, N_k, params, mode):
         return sample("mapk", Delta(f(mapk_mu, N_k)))
 
 
+def mapk_receiver(noise_dists):
+    '''
+    Mapk receiver model
+    :param noise_dists: N_3k, N_2k, N_k
+    :return: concentration of map3k, map2k and mapk at steady state
+    '''
+    # Parameters
+    mode = 'original'
+    al_m = torch.tensor(700.)
+    al_s = torch.tensor(1.)
+
+    nu_m = torch.tensor(.15)
+    nu_s = torch.tensor(.05)
+
+    params = {
+        "alpha_3k": Normal(al_m, al_s),
+        "alpha_2k": Normal(al_m, al_s),
+        "alpha_k": Normal(al_m, al_s),
+        "nu_3k": Normal(nu_m, nu_s),
+        "nu_2k": Normal(nu_m, nu_s),
+        "nu_k": Normal(nu_m, nu_s)
+    }
+
+    with pyro.iarange("model"):
+        E1 = Uniform(1.5e-5, 10.).rsample()
+        N_3k = sample('N_3k', noise_dists['N_3k'])
+        N_2k = sample('N_2k', noise_dists['N_2k'])
+        N_k = sample('N_k', noise_dists['N_k'])
+
+    map3k = f_map3k(E1, N_3k, params, mode)
+    map2k = f_map2k(map3k, N_2k, params, mode)
+    mapk = f_mapk(map2k, N_k, params, mode)
+
+    return {
+        'map3k': map3k,
+        'map2k': map2k,
+        'mapk': mapk
+    }
+
+
 def mapk_companion(noise_dists):
+    '''
+    Companion model that enables inference
+    :param noise_dists: N_3k, N_2k, N_k
+    :return:
+    '''
     mode = 'companion'
     # Parameters
     al_m = torch.tensor(700.)
@@ -103,43 +148,16 @@ def mapk_companion(noise_dists):
     }
 
 
-def mapk_receiver(noise_dists):
-    # Parameters
-    mode = 'original'
-    al_m = torch.tensor(700.)
-    al_s = torch.tensor(1.)
-
-    nu_m = torch.tensor(.15)
-    nu_s = torch.tensor(.05)
-
-    params = {
-        "alpha_3k": Normal(al_m, al_s),
-        "alpha_2k": Normal(al_m, al_s),
-        "alpha_k": Normal(al_m, al_s),
-        "nu_3k": Normal(nu_m, nu_s),
-        "nu_2k": Normal(nu_m, nu_s),
-        "nu_k": Normal(nu_m, nu_s)
-    }
-
-    with pyro.iarange("model"):
-        E1 = Uniform(1.5e-5, 10.).rsample()
-        N_3k = sample('N_3k', noise_dists['N_3k'])
-        N_2k = sample('N_2k', noise_dists['N_2k'])
-        N_k = sample('N_k', noise_dists['N_k'])
-
-    map3k = f_map3k(E1, N_3k, params, mode)
-    map2k = f_map2k(map3k, N_2k, params, mode)
-    mapk = f_mapk(map2k, N_k, params, mode)
-
-    return {
-        'map3k': map3k,
-        'map2k': map2k,
-        'mapk': mapk
-    }
-
-
 def mapk_do_receiver(do_value,noise_dists):
+    '''
+    This model validates the results from doing counterfactual inference on mapk_receiver
+    :param do_value: model uses this value to do hard intervention on map3k
+    :param noise_dists: N_3k, N_2k, N_k
+    :return:
+    '''
     mode = 'original'
+
+
     # Parameters
     al_m = torch.tensor(700.)
     al_s = torch.tensor(1.)
